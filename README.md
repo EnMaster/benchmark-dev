@@ -23,7 +23,7 @@ Strumento per misurare le performance CPU attraverso scenari reali di build.
 
 ```bash
 git clone <repo>
-cd benchmark-cpu
+cd benchmark-dev
 chmod +x benchmark.sh
 ```
 
