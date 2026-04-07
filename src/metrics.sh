@@ -87,9 +87,14 @@ measure_command() {
 }
 
 get_system_info() {
+    SYSINFO_CORES=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo "4")
+    SYSINFO_MEM=$(free -h 2>/dev/null | grep Mem | awk '{print $2}' || echo "N/A")
+    SYSINFO_KERNEL=$(uname -r)
+    SYSINFO_OS=$(cat /etc/os-release 2>/dev/null | grep PRETTY_NAME | cut -d'"' -f2 || uname -s)
+
     echo "=== System Info ==="
-    echo "CPU Cores: $(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 'N/A')"
-    echo "Memory: $(free -h 2>/dev/null | grep Mem | awk '{print $2}' || echo 'N/A')"
-    echo "Kernel: $(uname -r)"
-    echo "OS: $(cat /etc/os-release 2>/dev/null | grep PRETTY_NAME | cut -d'"' -f2 || uname -s)"
+    echo "CPU Cores: $SYSINFO_CORES"
+    echo "Memory: $SYSINFO_MEM"
+    echo "Kernel: $SYSINFO_KERNEL"
+    echo "OS: $SYSINFO_OS"
 }

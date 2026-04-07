@@ -146,14 +146,18 @@ update_json() {
     local cpu_avg="$3"
     local cpu_max="$4"
 
+    [ -f "$CONFIG_SRC_DIR/metrics.sh" ] && source "$CONFIG_SRC_DIR/metrics.sh" 2>/dev/null
+
     local temp=$(mktemp)
     jq --arg key "$key" \
        --arg time "$time" \
        --arg cpu_avg "$cpu_avg" \
        --arg cpu_max "$cpu_max" \
-       --arg cores "$NUM_CORES" \
-       --arg threads "$THREADS" \
-       '.timestamp = now | .system.cores = ($cores | tonumber) | .system.threads = ($threads | tonumber) | .benchmarks[$key] = {"time": ($time | tonumber), "cpu_avg": ($cpu_avg | tonumber), "cpu_max": ($cpu_max | tonumber)}' \
+       --arg cores "${SYSINFO_CORES:-$NUM_CORES}" \
+       --arg threads "${THREADS}" \
+       --arg memory "${SYSINFO_MEM:-N/A}" \
+       --arg os "${SYSINFO_OS:-N/A}" \
+       '.timestamp = now | .system.cores = ($cores | tonumber) | .system.threads = ($threads | tonumber) | .system.memory = $memory | .system.os = $os | .benchmarks[$key] = {"time": ($time | tonumber), "cpu_avg": ($cpu_avg | tonumber), "cpu_max": ($cpu_max | tonumber)}' \
        "$JSON_FILE" > "$temp"
     mv "$temp" "$JSON_FILE"
 }
@@ -188,6 +192,10 @@ run_benchmarks() {
     log_info "Iterazioni: $mode_iterations"
 
     get_system_info | tee -a "$LOG_FILE"
+
+    export SYSINFO_CORES=$(nproc 2>/dev/null || echo "4")
+    export SYSINFO_MEM=$(free -h 2>/dev/null | grep Mem | awk '{print $2}' || echo "N/A")
+    export SYSINFO_OS=$(cat /etc/os-release 2>/dev/null | grep PRETTY_NAME | cut -d'"' -f2 || uname -s)
 
     if [ "$SKIP_DOCKER" != "true" ]; then
         log_info "--- Benchmark 1: Docker Build ---"
