@@ -123,8 +123,6 @@ install_docker_official() {
 install_sdkman() {
     if [ -f "$HOME/.sdkman/bin/sdkman-init.sh" ]; then
         log_info "SDKMAN già installato"
-        export ZSH_VERSION="5.8"
-        source "$HOME/.sdkman/bin/sdkman-init.sh"
         return 0
     fi
 
@@ -132,46 +130,65 @@ install_sdkman() {
     if [ "$INSTALL_MODE" = "true" ] && [ "$(id -u)" != "0" ]; then
         log_step "Installo SDKMAN per l'utente corrente..."
         curl -s "https://get.sdkman.io" | bash
-        export ZSH_VERSION="5.8"
-        source "$HOME/.sdkman/bin/sdkman-init.sh"
     else
         log_warn "SDKMAN richiede installazione interattiva o privilegi root"
         return 1
     fi
 }
 
-install_maven_jdkman() {
-    log_info "Installazione Maven tramite JDKMAN..."
+load_sdkman() {
+    export ZSH_VERSION="5.8"
+    export SDKMAN_DIR="${SDKMAN_DIR:-$HOME/.sdkman}"
+    export sdkman_curl_retry=3
+    export sdkman_curl_connect_timeout=10
+    [ -f "$SDKMAN_DIR/bin/sdkman-init.sh" ] && source "$SDKMAN_DIR/bin/sdkman-init.sh"
+}
 
-    if [ -f "$HOME/.sdkman/bin/sdkman-init.sh" ]; then
-        export ZSH_VERSION="5.8"
-        source "$HOME/.sdkman/bin/sdkman-init.sh"
-    else
-        install_sdkman || {
-            log_warn "SDKMAN non disponibile, installo Maven dai repo..."
-            install_maven_apt
-            return $?
-        }
-    fi
+install_maven_jdkman() {
+    log_info "Installazione Maven (manuale)..."
 
     if command -v mvn &>/dev/null; then
         log_info "Maven già installato: $(mvn --version | head -1)"
         return 0
     fi
 
-    log_step "Installo Maven 3.9.x tramite SDKMAN..."
-    export ZSH_VERSION="5.8"
-    sdk install maven 3.9.9 || sdk install maven 3.9.6 || sdk install maven 3.9.0 || {
-        log_warn "Installazione Maven tramite SDKMAN fallita"
-        return 1
-    }
-
-    if command -v mvn &>/dev/null; then
-        log_success "Maven installato: $(mvn --version | head -1)"
-    else
-        log_error "Installazione Maven fallita"
-        return 1
+    if [ -d "$HOME/.sdkman/candidates/maven" ]; then
+        log_info "Maven tramite SDKMAN già presente"
+        load_sdkman
+        export PATH="$HOME/.sdkman/candidates/maven/current/bin:$PATH"
+        if command -v mvn &>/dev/null; then
+            log_success "Maven configurato: $(mvn --version | head -1)"
+            return 0
+        fi
     fi
+
+    log_step "Scarico Maven 3.9.9..."
+    local maven_version="3.9.9"
+    local maven_url="https://archive.apache.org/dist/maven/maven-3/${maven_version}/binaries/apache-maven-${maven_version}-bin.tar.gz"
+    local maven_dir="$HOME/.maven"
+    
+    mkdir -p "$maven_dir"
+    curl -fsSL "$maven_url" -o "/tmp/maven.tar.gz"
+    
+    if [ -f /tmp/maven.tar.gz ]; then
+        tar -xzf /tmp/maven.tar.gz -C "$maven_dir"
+        rm /tmp/maven.tar.gz
+        
+        local maven_bin="$maven_dir/apache-maven-${maven_version}/bin"
+        export PATH="$maven_bin:$PATH"
+        
+        if command -v mvn &>/dev/null; then
+            log_success "Maven installato: $(mvn --version | head -1)"
+            
+            echo "export MAVEN_HOME=$maven_dir/apache-maven-$maven_version" >> "$HOME/.bashrc"
+            echo "export PATH=\"\$MAVEN_HOME/bin:\$PATH\"" >> "$HOME/.bashrc"
+            
+            return 0
+        fi
+    fi
+    
+    log_warn "Installazione manuale fallita, provo apt..."
+    install_maven_apt
 }
 
 install_maven_apt() {
@@ -192,10 +209,8 @@ install_nvm() {
     log_info "Installazione NVM..."
     log_step "Scarico e installo NVM..."
     
-    curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh" | bash
-    
-    export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    mkdir -p "$HOME/.nvm"
+    curl -o- "https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh" | NVM_DIR="$HOME/.nvm" bash
     
     if [ -d "$HOME/.nvm" ]; then
         log_success "NVM installato"
@@ -209,17 +224,13 @@ install_node_nvm() {
     log_info "Installazione Node.js tramite NVM..."
     
     export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 2>/dev/null || {
-        if [ -f "$HOME/.bashrc" ]; then
-            log_info "Carico NVM da bashrc..."
-            source "$HOME/.bashrc" 2>/dev/null
-        fi
-    }
+    if [ -s "$NVM_DIR/nvm.sh" ]; then
+        source "$NVM_DIR/nvm.sh"
+    fi
     
     if ! command -v nvm &>/dev/null; then
         install_nvm || return 1
-        export NVM_DIR="$HOME/.nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        source "$NVM_DIR/nvm.sh"
     fi
     
     if command -v node &>/dev/null; then
