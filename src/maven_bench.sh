@@ -20,11 +20,9 @@ run_maven_benchmark() {
     cd "$workdir"
 
     if [ ! -f "pom.xml" ]; then
-        log_info "Clono repository Maven..."
-        git clone --depth 1 "$repo_url" "$workdir" 2>/dev/null || {
-            log_info "Clonazione fallita, creo progetto Maven di test..."
-            mkdir -p "$workdir/src/main/java/com/example"
-            cat > "$workdir/pom.xml" << 'EOF'
+        log_info "Creo progetto Maven di test..."
+        mkdir -p "$workdir/src/main/java/com/example"
+        cat > "$workdir/pom.xml" << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -61,7 +59,7 @@ run_maven_benchmark() {
     </build>
 </project>
 EOF
-            cat > "$workdir/src/main/java/com/example/App.java" << 'JAVA'
+        cat > "$workdir/src/main/java/com/example/App.java" << 'JAVA'
 package com.example;
 public class App {
     public static void main(String[] args) {
@@ -70,7 +68,6 @@ public class App {
     }
 }
 JAVA
-        }
     fi
 
     local total_time=0

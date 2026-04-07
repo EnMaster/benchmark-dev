@@ -24,14 +24,7 @@ run_docker_benchmark() {
     cd "$workdir"
 
     if [ ! -f "Dockerfile" ]; then
-        log_info "Clono repository Docker..."
-        git clone --depth 1 "$repo_url" "$workdir" 2>/dev/null || {
-            log_info "Creo progetto Docker di test..."
-        }
-    fi
-
-    if [ ! -f "Dockerfile" ]; then
-        log_info "Creo Dockerfile di test..."
+        log_info "Creo progetto Docker di test..."
         cat > Dockerfile << 'EOF'
 FROM eclipse-temurin:17-jdk
 

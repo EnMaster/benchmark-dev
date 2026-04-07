@@ -19,11 +19,9 @@ run_node_benchmark() {
     cd "$workdir"
 
     if [ ! -f "package.json" ]; then
-        log_info "Clono repository Node.js..."
-        git clone --depth 1 --filter=blob:none "$repo_url" "$workdir" 2>/dev/null || {
-            log_info "Creo progetto Node.js di test..."
-            mkdir -p "$workdir/src"
-            cat > "$workdir/package.json" << 'EOF'
+        log_info "Creo progetto Node.js di test..."
+        mkdir -p "$workdir/src"
+        cat > "$workdir/package.json" << 'EOF'
 {
   "name": "benchmark-app",
   "version": "1.0.0",
@@ -94,7 +92,6 @@ const code = generateApp();
 fs.writeFileSync(path.join(componentsDir, 'App.js'), code);
 console.log('Generated 50 React components');
 EOF
-        }
     fi
 
     if [ -f "package.json" ] && [ ! -d "node_modules" ]; then
