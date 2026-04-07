@@ -26,7 +26,7 @@ run_docker_benchmark() {
     if [ ! -f "Dockerfile" ]; then
         log_info "Creo Dockerfile di test..."
         cat > Dockerfile << 'EOF'
-FROM openjdk:17-slim
+FROM eclipse-temurin:17-jdk
 
 WORKDIR /app
 

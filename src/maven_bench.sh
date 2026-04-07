@@ -24,7 +24,7 @@ run_maven_benchmark() {
         git clone --depth 1 "$repo_url" "$workdir" 2>/dev/null || {
             log_info "Clonazione fallita, creo progetto Maven di test..."
             mkdir -p "$workdir/src/main/java/com/example"
-            cat > "$workDIR/pom.xml" << 'EOF'
+            cat > "$workdir/pom.xml" << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
