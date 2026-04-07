@@ -5,14 +5,13 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export SCRIPT_DIR
 
-if [ -f "$SCRIPT_DIR/src/config_installed.sh" ]; then
-    source "$SCRIPT_DIR/src/config_installed.sh"
-    CONFIG_SRC_DIR="$CONFIG_DIR/src"
+if [ -f "$HOME/.config/benchmark/src/config.sh" ]; then
+    CONFIG_SRC_DIR="$HOME/.config/benchmark/src"
+    WORKSPACE_DIR="$HOME/.benchmark"
 else
     CONFIG_SRC_DIR="$SCRIPT_DIR/src"
+    WORKSPACE_DIR="$SCRIPT_DIR"
 fi
-
-WORKSPACE_DIR="$(cd "$SCRIPT_DIR" && pwd)"
 export WORKSPACE_DIR
 
 source "$CONFIG_SRC_DIR/config.sh"
