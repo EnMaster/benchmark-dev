@@ -59,6 +59,8 @@ parse_args() {
         case $1 in
             --install)
                 INSTALL_MODE=true
+                CONFIG_DIR="$HOME/.config/benchmark"
+                export CONFIG_DIR
                 do_install "/usr/local/bin"
                 echo ""
                 echo "Esegui: benchmark"
@@ -67,6 +69,8 @@ parse_args() {
                 ;;
             --install-user)
                 INSTALL_MODE=true
+                CONFIG_DIR="$HOME/.config/benchmark"
+                export CONFIG_DIR
                 do_install "$HOME/.local/bin"
                 echo ""
                 echo "Esegui: benchmark"
@@ -185,12 +189,15 @@ run_benchmarks() {
 
     get_system_info | tee -a "$LOG_FILE"
 
-    local results=()
-
     if [ "$SKIP_DOCKER" != "true" ]; then
         log_info "--- Benchmark 1: Docker Build ---"
-        if source "$CONFIG_SRC_DIR/docker_bench.sh" 2>&1 | tee -a "$LOG_FILE"; then
-            :
+        local docker_result=$(source "$CONFIG_SRC_DIR/docker_bench.sh" 2>&1 | tee -a "$LOG_FILE")
+        if echo "$docker_result" | grep -q "|"; then
+            local name=$(echo "$docker_result" | tail -1 | cut -d'|' -f1)
+            local time=$(echo "$docker_result" | tail -1 | cut -d'|' -f2)
+            local cpu_avg=$(echo "$docker_result" | tail -1 | cut -d'|' -f3)
+            local cpu_max=$(echo "$docker_result" | tail -1 | cut -d'|' -f4)
+            [ -n "$time" ] && [ "$time" != "0" ] && update_json "docker_build" "$time" "$cpu_avg" "$cpu_max" && update_csv "docker_build" "$time" "$cpu_avg" "$cpu_max" && print_results "Docker Build" "$time" "$cpu_avg" "$cpu_max"
         fi
     else
         log_warn "Benchmark Docker saltato (--skip-docker)"
@@ -198,8 +205,13 @@ run_benchmarks() {
 
     if [ "$SKIP_MAVEN" != "true" ]; then
         log_info "--- Benchmark 2: Maven Build ---"
-        if source "$CONFIG_SRC_DIR/maven_bench.sh" 2>&1 | tee -a "$LOG_FILE"; then
-            :
+        local maven_result=$(source "$CONFIG_SRC_DIR/maven_bench.sh" 2>&1 | tee -a "$LOG_FILE")
+        if echo "$maven_result" | grep -q "|"; then
+            local name=$(echo "$maven_result" | tail -1 | cut -d'|' -f1)
+            local time=$(echo "$maven_result" | tail -1 | cut -d'|' -f2)
+            local cpu_avg=$(echo "$maven_result" | tail -1 | cut -d'|' -f3)
+            local cpu_max=$(echo "$maven_result" | tail -1 | cut -d'|' -f4)
+            [ -n "$time" ] && [ "$time" != "0" ] && update_json "maven_build" "$time" "$cpu_avg" "$cpu_max" && update_csv "maven_build" "$time" "$cpu_avg" "$cpu_max" && print_results "Maven Build" "$time" "$cpu_avg" "$cpu_max"
         fi
     else
         log_warn "Benchmark Maven saltato (--skip-maven)"
@@ -207,8 +219,13 @@ run_benchmarks() {
 
     if [ "$SKIP_NODE" != "true" ]; then
         log_info "--- Benchmark 3: Node.js Build ---"
-        if source "$CONFIG_SRC_DIR/node_bench.sh" 2>&1 | tee -a "$LOG_FILE"; then
-            :
+        local node_result=$(source "$CONFIG_SRC_DIR/node_bench.sh" 2>&1 | tee -a "$LOG_FILE")
+        if echo "$node_result" | grep -q "|"; then
+            local name=$(echo "$node_result" | tail -1 | cut -d'|' -f1)
+            local time=$(echo "$node_result" | tail -1 | cut -d'|' -f2)
+            local cpu_avg=$(echo "$node_result" | tail -1 | cut -d'|' -f3)
+            local cpu_max=$(echo "$node_result" | tail -1 | cut -d'|' -f4)
+            [ -n "$time" ] && [ "$time" != "0" ] && update_json "node_build" "$time" "$cpu_avg" "$cpu_max" && update_csv "node_build" "$time" "$cpu_avg" "$cpu_max" && print_results "Node.js Build" "$time" "$cpu_avg" "$cpu_max"
         fi
     else
         log_warn "Benchmark Node.js saltato (--skip-node)"
