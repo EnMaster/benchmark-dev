@@ -3,7 +3,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export SCRIPT_DIR
 WORKSPACE_DIR="$(cd "$SCRIPT_DIR" && pwd)"
+export WORKSPACE_DIR
+
+if [ -f "$SCRIPT_DIR/src/config_installed.sh" ]; then
+    source "$SCRIPT_DIR/src/config_installed.sh"
+fi
 
 source "$SCRIPT_DIR/src/config.sh"
 source "$SCRIPT_DIR/src/metrics.sh"

@@ -9,6 +9,9 @@ MODE="full"
 CLEANUP_CACHE=true
 OUTPUT_FORMAT="both"
 INSTALL_MODE=false
+SKIP_DOCKER="${SKIP_DOCKER:-false}"
+SKIP_MAVEN="${SKIP_MAVEN:-false}"
+SKIP_NODE="${SKIP_NODE:-false}"
 
 REPO_DOCKER="https://github.com/spring-projects/spring-petclinic.git"
 REPO_MAVEN="https://github.com/spring-projects/spring-petclinic.git"
@@ -294,12 +297,13 @@ do_install() {
     log_step "Creo directory..."
     mkdir -p "$target_dir"
     mkdir -p "$config_dir"
+    mkdir -p "$config_dir/src"
     mkdir -p "$REPOS_DIR"
     mkdir -p "$RESULTS_DIR"
 
     log_step "Copio file..."
-    local script_path="$(cd "$(dirname "$0")/.." && pwd)"
-    cp -r "$script_path/src" "$config_dir/" 2>/dev/null || true
+    local script_path="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+    cp -r "$script_path/src/"* "$config_dir/src/"
     cp "$script_path/benchmark.sh" "$target_dir/benchmark"
     chmod +x "$target_dir/benchmark"
 
@@ -310,6 +314,21 @@ do_install() {
     if [ -f "$HOME/.zshrc" ] && ! grep -q "benchmark" "$HOME/.zshrc"; then
         echo "export PATH=\"\$PATH:$target_dir\"" >> "$HOME/.zshrc"
     fi
+
+    log_step "Aggiorno config per utilizzo installed..."
+    cat > "$config_dir/config_installed.sh" << 'EOF'
+SCRIPT_DIR="$HOME/.config/benchmark"
+WORKSPACE_DIR="$HOME/.benchmark"
+export SCRIPT_DIR WORKSPACE_DIR
+REPOS_DIR="$WORKSPACE_DIR/repos"
+RESULTS_DIR="$WORKSPACE_DIR/results"
+CONFIG_DIR="$HOME/.config/benchmark"
+LOG_FILE="$RESULTS_DIR/benchmark.log"
+JSON_FILE="$RESULTS_DIR/results.json"
+CSV_FILE="$RESULTS_DIR/results.csv"
+EOF
+
+    log_success "Installazione completata!"
 
     log_success "Installazione completata!"
     echo ""

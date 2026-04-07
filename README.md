@@ -1,5 +1,8 @@
 # CPU Benchmark v1.0 per Sviluppo Software
 
+> ⚠️ **AVVISO**: Questo progetto è stato scritto interamente in **vibecoding** come esperimento. 
+> Usalo a **proprio rischio e pericolo**. Non ci sono garanzie di funzionamento.
+
 Strumento per misurare le performance CPU attraverso scenari reali di build.
 
 ## Perché questi workload?
