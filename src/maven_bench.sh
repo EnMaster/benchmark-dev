@@ -80,13 +80,16 @@ EOF
 
         drop_caches
 
-        local mvn_cmd="mvn clean package -T $threads -DskipTests $MAVEN_OPTS"
+        local build_log="$workdir/build_$i.log"
+        local mvn_cmd="mvn clean package -T $threads -DskipTests $MAVEN_OPTS 2>&1 | tee '$build_log'"
         local result=$(measure_command "$mvn_cmd" "$workdir")
         local cpu_avg=$(echo "$result" | cut -d'|' -f1)
         local cpu_max=$(echo "$result" | cut -d'|' -f2)
         local duration=$(echo "$result" | cut -d'|' -f4)
 
         if [ -n "$duration" ] && [ "$duration" != "0" ]; then
+            log_info "=== Output build $i ==="
+            tail -20 "$build_log" | while read line; do log_info "  $line"; done
             log_success "Iterazione $i completata: ${duration}s, CPU: ${cpu_avg}%"
             total_time=$(echo "$total_time + $duration" | bc)
             total_cpu_avg=$(echo "$total_cpu_avg + $cpu_avg" | bc)

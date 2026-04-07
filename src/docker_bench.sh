@@ -55,12 +55,15 @@ EOF
         drop_caches
         docker system prune -f &>/dev/null || true
 
-        local result=$(measure_command "docker build --no-cache -t benchmark/petclinic . 2>&1" "$workdir")
+        local build_log="$workdir/build_$i.log"
+        local result=$(measure_command "docker build --no-cache -t benchmark/petclinic . 2>&1 | tee '$build_log'" "$workdir")
         local cpu_avg=$(echo "$result" | cut -d'|' -f1)
         local cpu_max=$(echo "$result" | cut -d'|' -f2)
         local duration=$(echo "$result" | cut -d'|' -f4)
 
         if [ -n "$duration" ] && [ "$duration" != "0" ]; then
+            log_info "=== Output build $i ==="
+            cat "$build_log" | head -30 | while read line; do log_info "  $line"; done
             log_success "Iterazione $i completata: ${duration}s, CPU: ${cpu_avg}%"
             total_time=$(echo "$total_time + $duration" | bc)
             total_cpu_avg=$(echo "$total_cpu_avg + $cpu_avg" | bc)
