@@ -45,29 +45,31 @@ run_maven_benchmark() {
             <artifactId>spring-boot-starter</artifactId>
             <version>3.1.0</version>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
-            <version>3.1.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-            <version>2.1.214</version>
-            <scope>runtime</scope>
-        </dependency>
     </dependencies>
     <build>
         <plugins>
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>3.1.0</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <source>17</source>
+                    <target>17</target>
+                </configuration>
             </plugin>
         </plugins>
     </build>
 </project>
 EOF
+            cat > "$workdir/src/main/java/com/example/App.java" << 'JAVA'
+package com.example;
+public class App {
+    public static void main(String[] args) {
+        for(int i=0; i<10000000; i++) {}
+        System.out.println("Benchmark done");
+    }
+}
+JAVA
         }
     fi
 
