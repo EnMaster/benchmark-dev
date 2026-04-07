@@ -1,4 +1,4 @@
-# CPU Benchmark per Sviluppo Software
+# CPU Benchmark v1.0 per Sviluppo Software
 
 Strumento per misurare le performance CPU attraverso scenari reali di build.
 
@@ -21,10 +21,20 @@ Strumento per misurare le performance CPU attraverso scenari reali di build.
 
 ## Installazione
 
+### Installazione globale (richiede root)
 ```bash
-git clone <repo>
-cd benchmark-dev
-chmod +x benchmark.sh
+sudo ./benchmark.sh --install
+```
+
+### Installazione utente
+```bash
+./benchmark.sh --install-user
+```
+
+Dopo l'installazione:
+```bash
+benchmark           # Esegue i benchmark
+benchmark --help   # Mostra aiuto
 ```
 
 ## Utilizzo
@@ -41,6 +51,37 @@ chmod +x benchmark.sh
 
 # Solo output JSON
 ./benchmark.sh --output json
+
+# Salta test specifici
+./benchmark.sh --skip-docker
+./benchmark.sh --skip-maven
+./benchmark.sh --skip-node
+```
+
+## Dipendenze
+
+Lo strumento installa automaticamente le dipendenze mancanti:
+
+| Tool | Metodo installazione |
+|------|---------------------|
+| Docker | Ufficiale (download.docker.com) |
+| Maven | JDKMAN (sdkman.io) |
+| Node.js | NVM (nvm.sh) v20.x LTS |
+| Base (git, curl, bc, jq) | apt/yum |
+
+### Installazione manuale
+```bash
+# Docker (ufficiale)
+curl -fsSL https://get.docker.com | sh
+
+# Maven (JDKMAN)
+curl -s "https://get.sdkman.io" | bash
+source ~/.sdkman/bin/sdkman-init.sh
+sdk install maven 3.9.9
+
+# Node.js (nodesource)
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt-get install -y nodejs
 ```
 
 ## Output
@@ -82,21 +123,10 @@ chmod +x benchmark.sh
 }
 ```
 
-## Dipendenze
-
-- `docker` (opzionale)
-- `maven` (opzionale)
-- `node` + `npm` (opzionale)
-- `bc`, `jq` (richiesti)
-
-Installazione automatica su Ubuntu/Debian:
-```bash
-apt-get install bc jq maven docker.io nodejs npm
-```
-
 ## Note
 
 - Richiede Linux (testato su Ubuntu/Debian)
 - Alcuni test vengono saltati se le dipendenze mancano
 - `drop_caches` richiede root
 - Spazio richiesto: ~2-5GB
+- Supporta skip di singoli test con `--skip-docker`, `--skip-maven`, `--skip-node`

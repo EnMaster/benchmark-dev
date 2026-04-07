@@ -1,0 +1,10 @@
+.DS_Store
+*.swp
+*.swo
+*~
+results/*.json
+results/*.csv
+results/*.log
+repos/
+tmp/
+*.tmp

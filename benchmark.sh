@@ -10,22 +10,36 @@ source "$SCRIPT_DIR/src/metrics.sh"
 
 print_usage() {
     cat << EOF
-Usage: $0 [OPTIONS]
+CPU Benchmark v1.0 - Strumento per misurare le performance CPU attraverso scenari reali di build.
 
-CPU Benchmark per scenari di sviluppo reali
+USAGE:
+    $0 [COMMAND] [OPTIONS]
+
+COMMANDS:
+    (default)              Esegue i benchmark
+    --install             Installa lo strumento nel sistema
+    --help                Mostra questo messaggio
 
 OPTIONS:
     -m, --mode MODE       Modalità: quick (1 iter) o full (3 iter) [default: full]
     -t, --threads NUM     Numero di thread [default: auto]
     -c, --cleanup         Pulisci cache tra i test [default: true]
     -o, --output FORMAT   Output: cli, json, csv, both [default: both]
-    -h, --help            Mostra questo messaggio
+    --skip-docker         Salta installazione e test Docker
+    --skip-maven          Salta installazione e test Maven
+    --skip-node           Salta installazione e test Node.js
+
+INSTALL OPTIONS:
+    --install             Installa benchmark in /usr/local/bin (richiede root)
+    --install-user        Installa nella home utente (~/.local/bin)
 
 ESEMPI:
     $0                      # Esegui tutti i benchmark
-    $0 -m quick             # Modalità veloce
+    $0 --mode quick         # Modalità veloce
     $0 -t 8                 # Usa 8 thread
     $0 -o json              # Solo output JSON
+    $0 --install            # Installa lo strumento
+    $0 --skip-docker        # Skippa test Docker
 
 EOF
     exit 0
@@ -34,6 +48,16 @@ EOF
 parse_args() {
     while [[ $# -gt 0 ]]; do
         case $1 in
+            --install)
+                INSTALL_MODE=true
+                do_install "/usr/local/bin"
+                exit 0
+                ;;
+            --install-user)
+                INSTALL_MODE=true
+                do_install "$HOME/.local/bin"
+                exit 0
+                ;;
             -m|--mode)
                 MODE="$2"
                 shift 2
@@ -49,6 +73,18 @@ parse_args() {
             -o|--output)
                 OUTPUT_FORMAT="$2"
                 shift 2
+                ;;
+            --skip-docker)
+                SKIP_DOCKER=true
+                shift
+                ;;
+            --skip-maven)
+                SKIP_MAVEN=true
+                shift
+                ;;
+            --skip-node)
+                SKIP_NODE=true
+                shift
                 ;;
             -h|--help)
                 print_usage
@@ -136,19 +172,31 @@ run_benchmarks() {
 
     local results=()
 
-    log_info "--- Benchmark 1: Docker Build ---"
-    if source "$SCRIPT_DIR/src/docker_bench.sh" 2>&1 | tee -a "$LOG_FILE"; then
-        :
+    if [ "$SKIP_DOCKER" != "true" ]; then
+        log_info "--- Benchmark 1: Docker Build ---"
+        if source "$SCRIPT_DIR/src/docker_bench.sh" 2>&1 | tee -a "$LOG_FILE"; then
+            :
+        fi
+    else
+        log_warn "Benchmark Docker saltato (--skip-docker)"
     fi
 
-    log_info "--- Benchmark 2: Maven Build ---"
-    if source "$SCRIPT_DIR/src/maven_bench.sh" 2>&1 | tee -a "$LOG_FILE"; then
-        :
+    if [ "$SKIP_MAVEN" != "true" ]; then
+        log_info "--- Benchmark 2: Maven Build ---"
+        if source "$SCRIPT_DIR/src/maven_bench.sh" 2>&1 | tee -a "$LOG_FILE"; then
+            :
+        fi
+    else
+        log_warn "Benchmark Maven saltato (--skip-maven)"
     fi
 
-    log_info "--- Benchmark 3: Node.js Build ---"
-    if source "$SCRIPT_DIR/src/node_bench.sh" 2>&1 | tee -a "$LOG_FILE"; then
-        :
+    if [ "$SKIP_NODE" != "true" ]; then
+        log_info "--- Benchmark 3: Node.js Build ---"
+        if source "$SCRIPT_DIR/src/node_bench.sh" 2>&1 | tee -a "$LOG_FILE"; then
+            :
+        fi
+    else
+        log_warn "Benchmark Node.js saltato (--skip-node)"
     fi
 }
 
