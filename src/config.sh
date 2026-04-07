@@ -329,8 +329,6 @@ CSV_FILE="$RESULTS_DIR/results.csv"
 EOF
 
     log_success "Installazione completata!"
-
-    log_success "Installazione completata!"
     echo ""
     echo "Esegui: benchmark"
     echo "oppure: $target_dir/benchmark"
