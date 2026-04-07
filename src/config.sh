@@ -317,10 +317,21 @@ do_install() {
     mkdir -p "$RESULTS_DIR"
 
     log_step "Copio file..."
-    local script_path="${SCRIPT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-    cp -r "$script_path/src/"* "$config_dir/src/"
-    cp "$script_path/benchmark.sh" "$target_dir/benchmark"
-    chmod +x "$target_dir/benchmark"
+    local script_path=""
+    if [ -n "${SCRIPT_DIR:-}" ] && [ -f "$SCRIPT_DIR/benchmark.sh" ]; then
+        script_path="$SCRIPT_DIR"
+    elif [ -f "$(dirname "${BASH_SOURCE[0]}")/../benchmark.sh" ]; then
+        script_path="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    fi
+    
+    if [ -n "$script_path" ] && [ -d "$script_path/src" ]; then
+        cp -r "$script_path/src/"* "$config_dir/src/"
+        cp "$script_path/benchmark.sh" "$target_dir/benchmark"
+        chmod +x "$target_dir/benchmark"
+    else
+        log_error "Impossibile trovare i file sorgente"
+        return 1
+    fi
 
     log_step "Configuro PATH..."
     if [ -f "$HOME/.bashrc" ] && ! grep -q "benchmark" "$HOME/.bashrc"; then
@@ -344,10 +355,6 @@ CSV_FILE="$RESULTS_DIR/results.csv"
 EOF
 
     log_success "Installazione completata!"
-    echo ""
-    echo "Esegui: benchmark"
-    echo "oppure: $target_dir/benchmark"
-    echo ""
 }
 
 NUM_CORES=$(detect_cores)

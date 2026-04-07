@@ -60,11 +60,17 @@ parse_args() {
             --install)
                 INSTALL_MODE=true
                 do_install "/usr/local/bin"
+                echo ""
+                echo "Esegui: benchmark"
+                echo "oppure: /usr/local/bin/benchmark"
                 exit 0
                 ;;
             --install-user)
                 INSTALL_MODE=true
                 do_install "$HOME/.local/bin"
+                echo ""
+                echo "Esegui: benchmark"
+                echo "oppure: $HOME/.local/bin/benchmark"
                 exit 0
                 ;;
             -m|--mode)
@@ -183,7 +189,7 @@ run_benchmarks() {
 
     if [ "$SKIP_DOCKER" != "true" ]; then
         log_info "--- Benchmark 1: Docker Build ---"
-        if source "$SCRIPT_DIR/src/docker_bench.sh" 2>&1 | tee -a "$LOG_FILE"; then
+        if source "$CONFIG_SRC_DIR/docker_bench.sh" 2>&1 | tee -a "$LOG_FILE"; then
             :
         fi
     else
@@ -192,7 +198,7 @@ run_benchmarks() {
 
     if [ "$SKIP_MAVEN" != "true" ]; then
         log_info "--- Benchmark 2: Maven Build ---"
-        if source "$SCRIPT_DIR/src/maven_bench.sh" 2>&1 | tee -a "$LOG_FILE"; then
+        if source "$CONFIG_SRC_DIR/maven_bench.sh" 2>&1 | tee -a "$LOG_FILE"; then
             :
         fi
     else
@@ -201,7 +207,7 @@ run_benchmarks() {
 
     if [ "$SKIP_NODE" != "true" ]; then
         log_info "--- Benchmark 3: Node.js Build ---"
-        if source "$SCRIPT_DIR/src/node_bench.sh" 2>&1 | tee -a "$LOG_FILE"; then
+        if source "$CONFIG_SRC_DIR/node_bench.sh" 2>&1 | tee -a "$LOG_FILE"; then
             :
         fi
     else
