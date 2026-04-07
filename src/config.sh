@@ -298,7 +298,7 @@ do_install() {
     mkdir -p "$RESULTS_DIR"
 
     log_step "Copio file..."
-    local script_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    local script_path="$(cd "$(dirname "$0")/.." && pwd)"
     cp -r "$script_path/src" "$config_dir/" 2>/dev/null || true
     cp "$script_path/benchmark.sh" "$target_dir/benchmark"
     chmod +x "$target_dir/benchmark"
