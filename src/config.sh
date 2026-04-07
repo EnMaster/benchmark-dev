@@ -123,6 +123,7 @@ install_docker_official() {
 install_sdkman() {
     if [ -f "$HOME/.sdkman/bin/sdkman-init.sh" ]; then
         log_info "SDKMAN già installato"
+        export ZSH_VERSION="5.8"
         source "$HOME/.sdkman/bin/sdkman-init.sh"
         return 0
     fi
@@ -131,6 +132,7 @@ install_sdkman() {
     if [ "$INSTALL_MODE" = "true" ] && [ "$(id -u)" != "0" ]; then
         log_step "Installo SDKMAN per l'utente corrente..."
         curl -s "https://get.sdkman.io" | bash
+        export ZSH_VERSION="5.8"
         source "$HOME/.sdkman/bin/sdkman-init.sh"
     else
         log_warn "SDKMAN richiede installazione interattiva o privilegi root"
@@ -142,6 +144,7 @@ install_maven_jdkman() {
     log_info "Installazione Maven tramite JDKMAN..."
 
     if [ -f "$HOME/.sdkman/bin/sdkman-init.sh" ]; then
+        export ZSH_VERSION="5.8"
         source "$HOME/.sdkman/bin/sdkman-init.sh"
     else
         install_sdkman || {
@@ -157,6 +160,7 @@ install_maven_jdkman() {
     fi
 
     log_step "Installo Maven 3.9.x tramite SDKMAN..."
+    export ZSH_VERSION="5.8"
     sdk install maven 3.9.9 || sdk install maven 3.9.6 || sdk install maven 3.9.0 || {
         log_warn "Installazione Maven tramite SDKMAN fallita"
         return 1
