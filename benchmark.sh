@@ -199,7 +199,7 @@ run_benchmarks() {
 
     if [ "$SKIP_DOCKER" != "true" ]; then
         log_info "--- Benchmark 1: Docker Build ---"
-        local docker_result=$(source "$CONFIG_SRC_DIR/docker_bench.sh" 2>&1 | tee -a "$LOG_FILE")
+        local docker_result=$(source "$CONFIG_SRC_DIR/docker_bench.sh" 2>&1)
         if echo "$docker_result" | grep -q "|"; then
             local name=$(echo "$docker_result" | tail -1 | cut -d'|' -f1)
             local time=$(echo "$docker_result" | tail -1 | cut -d'|' -f2)
@@ -213,7 +213,7 @@ run_benchmarks() {
 
     if [ "$SKIP_MAVEN" != "true" ]; then
         log_info "--- Benchmark 2: Maven Build ---"
-        local maven_result=$(source "$CONFIG_SRC_DIR/maven_bench.sh" 2>&1 | tee -a "$LOG_FILE")
+        local maven_result=$(source "$CONFIG_SRC_DIR/maven_bench.sh" 2>&1)
         if echo "$maven_result" | grep -q "|"; then
             local name=$(echo "$maven_result" | tail -1 | cut -d'|' -f1)
             local time=$(echo "$maven_result" | tail -1 | cut -d'|' -f2)
@@ -227,7 +227,7 @@ run_benchmarks() {
 
     if [ "$SKIP_NODE" != "true" ]; then
         log_info "--- Benchmark 3: Node.js Build ---"
-        local node_result=$(source "$CONFIG_SRC_DIR/node_bench.sh" 2>&1 | tee -a "$LOG_FILE")
+        local node_result=$(source "$CONFIG_SRC_DIR/node_bench.sh" 2>&1)
         if echo "$node_result" | grep -q "|"; then
             local name=$(echo "$node_result" | tail -1 | cut -d'|' -f1)
             local time=$(echo "$node_result" | tail -1 | cut -d'|' -f2)

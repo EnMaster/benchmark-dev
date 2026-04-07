@@ -36,11 +36,11 @@ COLOR_BLUE='\033[0;34m'
 COLOR_CYAN='\033[0;36m'
 COLOR_NC='\033[0m'
 
-log_info() { echo -e "${COLOR_BLUE}[INFO]${COLOR_NC} $1" | tee -a "$LOG_FILE"; }
-log_success() { echo -e "${COLOR_GREEN}[OK]${COLOR_NC} $1" | tee -a "$LOG_FILE"; }
-log_warn() { echo -e "${COLOR_YELLOW}[WARN]${COLOR_NC} $1" | tee -a "$LOG_FILE"; }
-log_error() { echo -e "${COLOR_RED}[ERROR]${COLOR_NC} $1" | tee -a "$LOG_FILE"; }
-log_step() { echo -e "${COLOR_CYAN}[STEP]${COLOR_NC} $1" | tee -a "$LOG_FILE"; }
+log_info() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] ${COLOR_BLUE}[INFO]${COLOR_NC} $1" | tee -a "$LOG_FILE"; }
+log_success() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] ${COLOR_GREEN}[OK]${COLOR_NC} $1" | tee -a "$LOG_FILE"; }
+log_warn() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] ${COLOR_YELLOW}[WARN]${COLOR_NC} $1" | tee -a "$LOG_FILE"; }
+log_error() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] ${COLOR_RED}[ERROR]${COLOR_NC} $1" | tee -a "$LOG_FILE"; }
+log_step() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] ${COLOR_CYAN}[STEP]${COLOR_NC} $1" | tee -a "$LOG_FILE"; }
 
 detect_cores() {
     if command -v nproc &>/dev/null; then
