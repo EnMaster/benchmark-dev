@@ -63,8 +63,22 @@ EOF
 
         local build_log="$workdir/build_$i.log"
         local start_time=$(date +%s)
+        
+        log_info "Build in corso..." "$BENCHMARK_KEY"
+        (
+            while kill -0 $$ 2>/dev/null; do
+                sleep 10
+                echo -n "."
+            done
+        ) &
+        local progress_pid=$!
+        
         docker build --no-cache -t benchmark/petclinic . > "$build_log" 2>&1
         local exit_code=$?
+        
+        kill $progress_pid 2>/dev/null
+        wait $progress_pid 2>/dev/null
+        
         local end_time=$(date +%s)
         local duration=$((end_time - start_time))
 
