@@ -299,21 +299,26 @@ run_parallel_benchmarks() {
 
     log_info "Attesa completamento benchmark (PID: ${pids[*]})..." "bench"
 
-    local failed=0
     for pid in "${pids[@]}"; do
-        if wait $pid; then
+        wait $pid 2>/dev/null
+        local exit_code=$?
+        if [ $exit_code -eq 0 ]; then
             log_success "Benchmark PID $pid completato" "bench"
         else
-            log_warn "Benchmark PID $pid fallito" "bench"
-            ((failed++))
+            log_warn "Benchmark PID $pid completato con exit code $exit_code" "bench"
         fi
     done
 
-    if [ $failed -gt 0 ]; then
-        log_warn "$failed benchmark falliti" "bench"
-    fi
-
     log_info "=== Raccolta risultati ===" "bench"
+
+    for log in docker maven node; do
+        local log_file="$temp_dir/${log}.log"
+        if [ -f "$log_file" ]; then
+            cat "$log_file" >> "$LOG_FILE"
+            log_info "=== Log ${log} ===" "bench"
+            tail -30 "$log_file" | while read line; do log_info "  $line" "bench"; done
+        fi
+    done
 
     if [ -f "$temp_dir/docker.log" ] && ! [ "$SKIP_DOCKER" = "true" ]; then
         local docker_result=$(cat "$temp_dir/docker.log")
@@ -324,7 +329,6 @@ run_parallel_benchmarks() {
             local cpu_max=$(echo "$docker_result" | tail -1 | cut -d'|' -f4)
             [ -n "$time" ] && [ "$time" != "0" ] && update_json "docker_build" "$time" "$cpu_avg" "$cpu_max" && update_csv "docker_build" "$time" "$cpu_avg" "$cpu_max" && print_results "Docker Build" "$time" "$cpu_avg" "$cpu_max"
         fi
-        cat "$temp_dir/docker.log" >> "$LOG_FILE"
     fi
 
     if [ -f "$temp_dir/maven.log" ] && ! [ "$SKIP_MAVEN" = "true" ]; then
@@ -336,7 +340,6 @@ run_parallel_benchmarks() {
             local cpu_max=$(echo "$maven_result" | tail -1 | cut -d'|' -f4)
             [ -n "$time" ] && [ "$time" != "0" ] && update_json "maven_build" "$time" "$cpu_avg" "$cpu_max" && update_csv "maven_build" "$time" "$cpu_avg" "$cpu_max" && print_results "Maven Build" "$time" "$cpu_avg" "$cpu_max"
         fi
-        cat "$temp_dir/maven.log" >> "$LOG_FILE"
     fi
 
     if [ -f "$temp_dir/node.log" ] && ! [ "$SKIP_NODE" = "true" ]; then
@@ -348,7 +351,6 @@ run_parallel_benchmarks() {
             local cpu_max=$(echo "$node_result" | tail -1 | cut -d'|' -f4)
             [ -n "$time" ] && [ "$time" != "0" ] && update_json "node_build" "$time" "$cpu_avg" "$cpu_max" && update_csv "node_build" "$time" "$cpu_avg" "$cpu_max" && print_results "Node.js Build" "$time" "$cpu_avg" "$cpu_max"
         fi
-        cat "$temp_dir/node.log" >> "$LOG_FILE"
     fi
 
     rm -rf "$temp_dir"
