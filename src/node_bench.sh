@@ -102,11 +102,17 @@ EOF
         npm install --legacy-peer-deps &>/dev/null
     fi
 
-    if [ -f "package.json" ] && [ -f "package.json" ]; then
-        local has_build=$(node -e "console.log(require('./package.json').scripts?.build ? 'yes' : 'no')" 2>/dev/null || echo "no")
-        if [ "$has_build" != "yes" ]; then
+    if [ -f "package.json" ]; then
+        local has_build=$(node -p "require('./package.json').scripts?.build || 'no'" 2>/dev/null | head -1)
+        if [ "$has_build" = "no" ] || [ -z "$has_build" ]; then
             log_info "Aggiungo script build..." "$BENCHMARK_KEY"
-            node -e "const pkg=require('./package.json'); pkg.scripts={...pkg.scripts,build:'node -e \"console.log(\\\'CPU test\\\') ; for(let i=0;i<100000000;i++){Math.sqrt(i)}'\"}; require('fs').writeFileSync('package.json',JSON.stringify(pkg,null,2))"
+            node -e "
+const fs=require('fs');
+const pkg=JSON.parse(fs.readFileSync('./package.json','utf8'));
+pkg.scripts=pkg.scripts||{};
+pkg.scripts.build='node -e \"let n=0;for(let i=0;i<100000000;i++)n+=Math.sqrt(i);console.log(n)\"';
+fs.writeFileSync('./package.json',JSON.stringify(pkg,null,2));
+"
         fi
     fi
 
