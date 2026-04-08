@@ -102,6 +102,14 @@ EOF
         npm install --legacy-peer-deps &>/dev/null
     fi
 
+    if [ -f "package.json" ] && [ -f "package.json" ]; then
+        local has_build=$(node -e "console.log(require('./package.json').scripts?.build ? 'yes' : 'no')" 2>/dev/null || echo "no")
+        if [ "$has_build" != "yes" ]; then
+            log_info "Aggiungo script build..." "$BENCHMARK_KEY"
+            node -e "const pkg=require('./package.json'); pkg.scripts={...pkg.scripts,build:'node -e \"console.log(\\\'CPU test\\\') ; for(let i=0;i<100000000;i++){Math.sqrt(i)}'\"}; require('fs').writeFileSync('package.json',JSON.stringify(pkg,null,2))"
+        fi
+    fi
+
     local total_time=0
     local total_cpu_avg=0
     local total_cpu_max=0

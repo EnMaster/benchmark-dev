@@ -83,7 +83,8 @@ JAVA
         drop_caches
 
         local build_log="$workdir/build_$i.log"
-        local mvn_cmd="mvn clean package -T $threads -DskipTests $MAVEN_OPTS 2>&1 | tee '$build_log'"
+        export MAVEN_OPTS="-Xmx1024m"
+        local mvn_cmd="mvn clean package -T $threads -DskipTests 2>&1 | tee '$build_log'"
         local result=$(measure_command "$mvn_cmd" "$workdir")
         local exit_code=$(echo "$result" | cut -d'|' -f5)
         local cpu_avg=$(echo "$result" | cut -d'|' -f1)
