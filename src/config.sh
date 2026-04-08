@@ -15,7 +15,7 @@ SKIP_NODE="${SKIP_NODE:-false}"
 
 REPO_DOCKER="https://github.com/spring-projects/spring-petclinic.git"
 REPO_MAVEN="https://github.com/spring-projects/spring-petclinic.git"
-REPO_NODE="https://github.com/vercel/next.js.git"
+REPO_NODE="https://github.com/nestjs/nest.git"
 
 WORKSPACE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 REPOS_DIR="$WORKSPACE_DIR/repos"
