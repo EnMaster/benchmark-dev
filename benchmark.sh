@@ -34,6 +34,7 @@ OPTIONS:
     -t, --threads NUM     Numero di thread [default: auto]
     -c, --cleanup         Pulisci cache tra i test [default: true]
     -o, --output FORMAT   Output: cli, json, csv, both [default: both]
+    -p, --parallel        Esegui i 3 benchmark in parallelo [default: false]
     --skip-docker         Salta installazione e test Docker
     --skip-maven          Salta installazione e test Maven
     --skip-node           Salta installazione e test Node.js
@@ -47,6 +48,7 @@ ESEMPI:
     $0 --mode quick         # Modalità veloce
     $0 -t 8                 # Usa 8 thread
     $0 -o json              # Solo output JSON
+    $0 -p                   # Esegui benchmark in parallelo
     $0 --install            # Installa lo strumento
     $0 --skip-docker        # Skippa test Docker
 
@@ -92,6 +94,10 @@ parse_args() {
             -o|--output)
                 OUTPUT_FORMAT="$2"
                 shift 2
+                ;;
+            -p|--parallel)
+                PARALLEL_MODE=true
+                shift
                 ;;
             --skip-docker)
                 SKIP_DOCKER=true
@@ -190,6 +196,7 @@ run_benchmarks() {
     log_info "Avvio benchmark in modalità: $MODE" "bench"
     log_info "Thread configurati: $THREADS" "bench"
     log_info "Iterazioni: $mode_iterations" "bench"
+    [ "$PARALLEL_MODE" = "true" ] && log_info "Modalità PARALLELA attivata" "bench"
 
     get_system_info | tee -a "$LOG_FILE"
 
@@ -197,6 +204,14 @@ run_benchmarks() {
     export SYSINFO_MEM=$(free -h 2>/dev/null | grep Mem | awk '{print $2}' || echo "N/A")
     export SYSINFO_OS=$(cat /etc/os-release 2>/dev/null | grep PRETTY_NAME | cut -d'"' -f2 || uname -s)
 
+    if [ "$PARALLEL_MODE" = "true" ]; then
+        run_parallel_benchmarks
+    else
+        run_sequential_benchmarks
+    fi
+}
+
+run_sequential_benchmarks() {
     if [ "$SKIP_DOCKER" != "true" ]; then
         log_info "--- Benchmark 1: Docker Build ---" "bench"
         local docker_result=$(source "$CONFIG_SRC_DIR/docker_bench.sh" 2>&1)
@@ -238,6 +253,106 @@ run_benchmarks() {
     else
         log_warn "Benchmark Node.js saltato (--skip-node)" "bench"
     fi
+}
+
+run_parallel_benchmarks() {
+    local temp_dir="$RESULTS_DIR/parallel_temp"
+    mkdir -p "$temp_dir"
+
+    log_info "=== Avvio benchmark in PARALLELO ===" "bench"
+
+    local pids=()
+    local docker_done=false maven_done=false node_done=false
+
+    if [ "$SKIP_DOCKER" != "true" ]; then
+        log_info ">>> Avvio Docker Build in background..." "bench"
+        (
+            source "$CONFIG_SRC_DIR/docker_bench.sh" 2>&1
+        ) > "$temp_dir/docker.log" 2>&1 &
+        pids+=($!)
+    else
+        docker_done=true
+        log_warn "Benchmark Docker saltato (--skip-docker)" "bench"
+    fi
+
+    if [ "$SKIP_MAVEN" != "true" ]; then
+        log_info ">>> Avvio Maven Build in background..." "bench"
+        (
+            source "$CONFIG_SRC_DIR/maven_bench.sh" 2>&1
+        ) > "$temp_dir/maven.log" 2>&1 &
+        pids+=($!)
+    else
+        maven_done=true
+        log_warn "Benchmark Maven saltato (--skip-maven)" "bench"
+    fi
+
+    if [ "$SKIP_NODE" != "true" ]; then
+        log_info ">>> Avvio Node.js Build in background..." "bench"
+        (
+            source "$CONFIG_SRC_DIR/node_bench.sh" 2>&1
+        ) > "$temp_dir/node.log" 2>&1 &
+        pids+=($!)
+    else
+        node_done=true
+        log_warn "Benchmark Node.js saltato (--skip-node)" "bench"
+    fi
+
+    log_info "Attesa completamento benchmark (PID: ${pids[*]})..." "bench"
+
+    local failed=0
+    for pid in "${pids[@]}"; do
+        if wait $pid; then
+            log_success "Benchmark PID $pid completato" "bench"
+        else
+            log_warn "Benchmark PID $pid fallito" "bench"
+            ((failed++))
+        fi
+    done
+
+    if [ $failed -gt 0 ]; then
+        log_warn "$failed benchmark falliti" "bench"
+    fi
+
+    log_info "=== Raccolta risultati ===" "bench"
+
+    if [ -f "$temp_dir/docker.log" ] && ! [ "$SKIP_DOCKER" = "true" ]; then
+        local docker_result=$(cat "$temp_dir/docker.log")
+        if echo "$docker_result" | grep -q "|"; then
+            local name=$(echo "$docker_result" | tail -1 | cut -d'|' -f1)
+            local time=$(echo "$docker_result" | tail -1 | cut -d'|' -f2)
+            local cpu_avg=$(echo "$docker_result" | tail -1 | cut -d'|' -f3)
+            local cpu_max=$(echo "$docker_result" | tail -1 | cut -d'|' -f4)
+            [ -n "$time" ] && [ "$time" != "0" ] && update_json "docker_build" "$time" "$cpu_avg" "$cpu_max" && update_csv "docker_build" "$time" "$cpu_avg" "$cpu_max" && print_results "Docker Build" "$time" "$cpu_avg" "$cpu_max"
+        fi
+        cat "$temp_dir/docker.log" >> "$LOG_FILE"
+    fi
+
+    if [ -f "$temp_dir/maven.log" ] && ! [ "$SKIP_MAVEN" = "true" ]; then
+        local maven_result=$(cat "$temp_dir/maven.log")
+        if echo "$maven_result" | grep -q "|"; then
+            local name=$(echo "$maven_result" | tail -1 | cut -d'|' -f1)
+            local time=$(echo "$maven_result" | tail -1 | cut -d'|' -f2)
+            local cpu_avg=$(echo "$maven_result" | tail -1 | cut -d'|' -f3)
+            local cpu_max=$(echo "$maven_result" | tail -1 | cut -d'|' -f4)
+            [ -n "$time" ] && [ "$time" != "0" ] && update_json "maven_build" "$time" "$cpu_avg" "$cpu_max" && update_csv "maven_build" "$time" "$cpu_avg" "$cpu_max" && print_results "Maven Build" "$time" "$cpu_avg" "$cpu_max"
+        fi
+        cat "$temp_dir/maven.log" >> "$LOG_FILE"
+    fi
+
+    if [ -f "$temp_dir/node.log" ] && ! [ "$SKIP_NODE" = "true" ]; then
+        local node_result=$(cat "$temp_dir/node.log")
+        if echo "$node_result" | grep -q "|"; then
+            local name=$(echo "$node_result" | tail -1 | cut -d'|' -f1)
+            local time=$(echo "$node_result" | tail -1 | cut -d'|' -f2)
+            local cpu_avg=$(echo "$node_result" | tail -1 | cut -d'|' -f3)
+            local cpu_max=$(echo "$node_result" | tail -1 | cut -d'|' -f4)
+            [ -n "$time" ] && [ "$time" != "0" ] && update_json "node_build" "$time" "$cpu_avg" "$cpu_max" && update_csv "node_build" "$time" "$cpu_avg" "$cpu_max" && print_results "Node.js Build" "$time" "$cpu_avg" "$cpu_max"
+        fi
+        cat "$temp_dir/node.log" >> "$LOG_FILE"
+    fi
+
+    rm -rf "$temp_dir"
+    log_success "=== Benchmark parallelo completato ===" "bench"
 }
 
 main() {

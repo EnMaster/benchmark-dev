@@ -12,6 +12,7 @@ INSTALL_MODE=false
 SKIP_DOCKER="${SKIP_DOCKER:-false}"
 SKIP_MAVEN="${SKIP_MAVEN:-false}"
 SKIP_NODE="${SKIP_NODE:-false}"
+PARALLEL_MODE="${PARALLEL_MODE:-false}"
 
 REPO_DOCKER="https://github.com/spring-projects/spring-petclinic.git"
 REPO_MAVEN="https://github.com/spring-projects/spring-petclinic.git"
