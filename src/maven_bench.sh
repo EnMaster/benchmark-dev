@@ -9,10 +9,10 @@ run_maven_benchmark() {
     local iterations="${3:-3}"
     local workdir="$REPOS_DIR/maven_build"
 
-    log_info "=== $BENCHMARK_NAME (threads: $threads) ==="
+    log_info "=== $BENCHMARK_NAME (threads: $threads) ===" "$BENCHMARK_KEY"
 
     if ! command -v mvn &>/dev/null; then
-        log_warn "Maven non disponibile, skip benchmark"
+        log_warn "Maven non disponibile, skip benchmark" "$BENCHMARK_KEY"
         return 1
     fi
 
@@ -20,9 +20,9 @@ run_maven_benchmark() {
     cd "$workdir"
 
     if [ ! -f "pom.xml" ]; then
-        log_info "Clono repository Maven..."
+        log_info "Clono repository Maven..." "$BENCHMARK_KEY"
         git clone --depth 1 "$repo_url" "$workdir" 2>/dev/null || {
-            log_info "Creo progetto Maven di test..."
+            log_info "Creo progetto Maven di test..." "$BENCHMARK_KEY"
             mkdir -p "$workdir/src/main/java/com/example"
             cat > "$workdir/pom.xml" << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -78,7 +78,7 @@ JAVA
     local total_cpu_max=0
 
     for i in $(seq 1 $iterations); do
-        log_info "Iterazione $i/$iterations..."
+        log_info "Iterazione $i/$iterations..." "$BENCHMARK_KEY"
 
         drop_caches
 
@@ -91,16 +91,16 @@ JAVA
         local duration=$(echo "$result" | cut -d'|' -f4)
 
         if [ "$exit_code" = "0" ] && [ -n "$duration" ] && [ "$duration" != "0" ]; then
-            log_info "=== Output build $i ==="
-            tail -20 "$build_log" | while read line; do log_info "  $line"; done
-            log_success "Iterazione $i completata: ${duration}s, CPU: ${cpu_avg}%"
+            log_info "=== Output build $i ===" "$BENCHMARK_KEY"
+            tail -20 "$build_log" | while read line; do log_info "  $line" "$BENCHMARK_KEY"; done
+            log_success "Iterazione $i completata: ${duration}s, CPU: ${cpu_avg}%" "$BENCHMARK_KEY"
             total_time=$(echo "$total_time + $duration" | bc)
             total_cpu_avg=$(echo "$total_cpu_avg + $cpu_avg" | bc)
             total_cpu_max=$(echo "$total_cpu_max + $cpu_max" | bc)
         else
-            log_warn "Iterazione $i fallita (exit code: $exit_code)"
-            log_info "=== Output build $i ==="
-            tail -20 "$build_log" | while read line; do log_info "  $line"; done
+            log_warn "Iterazione $i fallita (exit code: $exit_code)" "$BENCHMARK_KEY"
+            log_info "=== Output build $i ===" "$BENCHMARK_KEY"
+            tail -20 "$build_log" | while read line; do log_info "  $line" "$BENCHMARK_KEY"; done
         fi
     done
 

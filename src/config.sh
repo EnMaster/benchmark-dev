@@ -36,11 +36,11 @@ COLOR_BLUE='\033[0;34m'
 COLOR_CYAN='\033[0;36m'
 COLOR_NC='\033[0m'
 
-log_info() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] ${COLOR_BLUE}[INFO]${COLOR_NC} $1" | tee -a "$LOG_FILE"; }
-log_success() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] ${COLOR_GREEN}[OK]${COLOR_NC} $1" | tee -a "$LOG_FILE"; }
-log_warn() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] ${COLOR_YELLOW}[WARN]${COLOR_NC} $1" | tee -a "$LOG_FILE"; }
-log_error() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] ${COLOR_RED}[ERROR]${COLOR_NC} $1" | tee -a "$LOG_FILE"; }
-log_step() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] ${COLOR_CYAN}[STEP]${COLOR_NC} $1" | tee -a "$LOG_FILE"; }
+log_info() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] ${COLOR_BLUE}[INFO]${COLOR_NC} ${2:-}[$1]" | tee -a "$LOG_FILE"; }
+log_success() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] ${COLOR_GREEN}[OK]${COLOR_NC} ${2:-}[$1]" | tee -a "$LOG_FILE"; }
+log_warn() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] ${COLOR_YELLOW}[WARN]${COLOR_NC} ${2:-}[$1]" | tee -a "$LOG_FILE"; }
+log_error() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] ${COLOR_RED}[ERROR]${COLOR_NC} ${2:-}[$1]" | tee -a "$LOG_FILE"; }
+log_step() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] ${COLOR_CYAN}[STEP]${COLOR_NC} ${2:-}[$1]" | tee -a "$LOG_FILE"; }
 
 detect_cores() {
     if command -v nproc &>/dev/null; then
@@ -55,7 +55,7 @@ detect_cores() {
 }
 
 cleanup() {
-    log_info "Cleanup in corso..."
+    log_info "Cleanup in corso..." "config"
     rm -rf "$REPOS_DIR"/* 2>/dev/null
     sync; echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
 }
@@ -63,9 +63,9 @@ cleanup() {
 drop_caches() {
     if [ "$(id -u)" = "0" ]; then
         sync && echo 3 > /proc/sys/vm/drop_caches
-        log_info "Cache droppata (root)"
+        log_info "Cache droppata (root)" "config"
     else
-        log_warn "Non root, skip drop_caches"
+        log_warn "Non root, skip drop_caches" "config"
     fi
 }
 

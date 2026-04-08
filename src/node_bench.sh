@@ -8,10 +8,10 @@ run_node_benchmark() {
     local iterations="${2:-3}"
     local workdir="$REPOS_DIR/node_build"
 
-    log_info "=== $BENCHMARK_NAME ==="
+    log_info "=== $BENCHMARK_NAME ===" "$BENCHMARK_KEY"
 
     if ! command -v node &>/dev/null || ! command -v npm &>/dev/null; then
-        log_warn "Node.js/npm non disponibile, skip benchmark"
+        log_warn "Node.js/npm non disponibile, skip benchmark" "$BENCHMARK_KEY"
         return 1
     fi
 
@@ -19,9 +19,9 @@ run_node_benchmark() {
     cd "$workdir"
 
     if [ ! -f "package.json" ]; then
-        log_info "Clono repository Node.js..."
+        log_info "Clono repository Node.js..." "$BENCHMARK_KEY"
         git clone --depth 1 --filter=blob:none "$repo_url" "$workdir" 2>/dev/null || {
-            log_info "Creo progetto Node.js di test..."
+            log_info "Creo progetto Node.js di test..." "$BENCHMARK_KEY"
             mkdir -p "$workdir/src"
             cat > "$workdir/package.json" << 'EOF'
 {
@@ -98,7 +98,7 @@ EOF
     fi
 
     if [ -f "package.json" ] && [ ! -d "node_modules" ]; then
-        log_info "Installo dipendenze Node.js..."
+        log_info "Installo dipendenze Node.js..." "$BENCHMARK_KEY"
         npm install --legacy-peer-deps &>/dev/null
     fi
 
@@ -108,7 +108,7 @@ EOF
 
     if [ -f "package.json" ]; then
         for i in $(seq 1 $iterations); do
-            log_info "Iterazione $i/$iterations..."
+            log_info "Iterazione $i/$iterations..." "$BENCHMARK_KEY"
 
             drop_caches
             rm -rf "$workdir/dist" 2>/dev/null
@@ -121,16 +121,16 @@ EOF
             local duration=$(echo "$result" | cut -d'|' -f4)
 
             if [ "$exit_code" = "0" ] && [ -n "$duration" ] && [ "$duration" != "0" ]; then
-                log_info "=== Output build $i ==="
-                tail -20 "$build_log" | while read line; do log_info "  $line"; done
-                log_success "Iterazione $i completata: ${duration}s, CPU: ${cpu_avg}%"
+                log_info "=== Output build $i ===" "$BENCHMARK_KEY"
+                tail -20 "$build_log" | while read line; do log_info "  $line" "$BENCHMARK_KEY"; done
+                log_success "Iterazione $i completata: ${duration}s, CPU: ${cpu_avg}%" "$BENCHMARK_KEY"
                 total_time=$(echo "$total_time + $duration" | bc)
                 total_cpu_avg=$(echo "$total_cpu_avg + $cpu_avg" | bc)
                 total_cpu_max=$(echo "$total_cpu_max + $cpu_max" | bc)
             else
-                log_warn "Iterazione $i fallita (exit code: $exit_code)"
-                log_info "=== Output build $i ==="
-                tail -20 "$build_log" | while read line; do log_info "  $line"; done
+                log_warn "Iterazione $i fallita (exit code: $exit_code)" "$BENCHMARK_KEY"
+                log_info "=== Output build $i ===" "$BENCHMARK_KEY"
+                tail -20 "$build_log" | while read line; do log_info "  $line" "$BENCHMARK_KEY"; done
             fi
         done
     fi

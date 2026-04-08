@@ -8,15 +8,15 @@ run_docker_benchmark() {
     local iterations="${2:-3}"
     local workdir="$REPOS_DIR/docker_build"
 
-    log_info "=== $BENCHMARK_NAME ==="
+    log_info "=== $BENCHMARK_NAME ===" "$BENCHMARK_KEY"
 
     if ! command -v docker &>/dev/null; then
-        log_warn "Docker non disponibile, skip benchmark"
+        log_warn "Docker non disponibile, skip benchmark" "$BENCHMARK_KEY"
         return 1
     fi
 
     if ! docker info &>/dev/null; then
-        log_warn "Docker daemon non in esecuzione, skip benchmark"
+        log_warn "Docker daemon non in esecuzione, skip benchmark" "$BENCHMARK_KEY"
         return 1
     fi
 
@@ -24,14 +24,14 @@ run_docker_benchmark() {
     cd "$workdir"
 
     if [ ! -f "Dockerfile" ]; then
-        log_info "Clono repository Docker..."
+        log_info "Clono repository Docker..." "$BENCHMARK_KEY"
         git clone --depth 1 "$repo_url" "$workdir" 2>/dev/null || {
-            log_info "Creo progetto Docker di test..."
+            log_info "Creo progetto Docker di test..." "$BENCHMARK_KEY"
         }
     fi
 
     if [ ! -f "Dockerfile" ]; then
-        log_info "Creo Dockerfile di test..."
+        log_info "Creo Dockerfile di test..." "$BENCHMARK_KEY"
         cat > Dockerfile << 'EOF'
 FROM eclipse-temurin:17-jdk
 
@@ -57,7 +57,7 @@ EOF
     local total_cpu_max=0
 
     for i in $(seq 1 $iterations); do
-        log_info "Iterazione $i/$iterations..."
+        log_info "Iterazione $i/$iterations..." "$BENCHMARK_KEY"
 
         drop_caches
         docker system prune -f &>/dev/null || true
@@ -70,16 +70,16 @@ EOF
         local duration=$(echo "$result" | cut -d'|' -f4)
 
         if [ "$exit_code" = "0" ] && [ -n "$duration" ] && [ "$duration" != "0" ]; then
-            log_info "=== Output build $i ==="
-            cat "$build_log" | head -30 | while read line; do log_info "  $line"; done
-            log_success "Iterazione $i completata: ${duration}s, CPU: ${cpu_avg}%"
+            log_info "=== Output build $i ===" "$BENCHMARK_KEY"
+            cat "$build_log" | head -30 | while read line; do log_info "  $line" "$BENCHMARK_KEY"; done
+            log_success "Iterazione $i completata: ${duration}s, CPU: ${cpu_avg}%" "$BENCHMARK_KEY"
             total_time=$(echo "$total_time + $duration" | bc)
             total_cpu_avg=$(echo "$total_cpu_avg + $cpu_avg" | bc)
             total_cpu_max=$(echo "$total_cpu_max + $cpu_max" | bc)
         else
-            log_warn "Iterazione $i fallita (exit code: $exit_code)"
-            log_info "=== Output build $i ==="
-            cat "$build_log" | head -30 | while read line; do log_info "  $line"; done
+            log_warn "Iterazione $i fallita (exit code: $exit_code)" "$BENCHMARK_KEY"
+            log_info "=== Output build $i ===" "$BENCHMARK_KEY"
+            cat "$build_log" | head -30 | while read line; do log_info "  $line" "$BENCHMARK_KEY"; done
         fi
     done
 

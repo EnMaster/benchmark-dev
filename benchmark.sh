@@ -187,9 +187,9 @@ run_benchmarks() {
     local mode_iterations=3
     [ "$MODE" = "quick" ] && mode_iterations=1
 
-    log_info "Avvio benchmark in modalità: $MODE"
-    log_info "Thread configurati: $THREADS"
-    log_info "Iterazioni: $mode_iterations"
+    log_info "Avvio benchmark in modalità: $MODE" "bench"
+    log_info "Thread configurati: $THREADS" "bench"
+    log_info "Iterazioni: $mode_iterations" "bench"
 
     get_system_info | tee -a "$LOG_FILE"
 
@@ -198,7 +198,7 @@ run_benchmarks() {
     export SYSINFO_OS=$(cat /etc/os-release 2>/dev/null | grep PRETTY_NAME | cut -d'"' -f2 || uname -s)
 
     if [ "$SKIP_DOCKER" != "true" ]; then
-        log_info "--- Benchmark 1: Docker Build ---"
+        log_info "--- Benchmark 1: Docker Build ---" "bench"
         local docker_result=$(source "$CONFIG_SRC_DIR/docker_bench.sh" 2>&1)
         if echo "$docker_result" | grep -q "|"; then
             local name=$(echo "$docker_result" | tail -1 | cut -d'|' -f1)
@@ -208,11 +208,11 @@ run_benchmarks() {
             [ -n "$time" ] && [ "$time" != "0" ] && update_json "docker_build" "$time" "$cpu_avg" "$cpu_max" && update_csv "docker_build" "$time" "$cpu_avg" "$cpu_max" && print_results "Docker Build" "$time" "$cpu_avg" "$cpu_max"
         fi
     else
-        log_warn "Benchmark Docker saltato (--skip-docker)"
+        log_warn "Benchmark Docker saltato (--skip-docker)" "bench"
     fi
 
     if [ "$SKIP_MAVEN" != "true" ]; then
-        log_info "--- Benchmark 2: Maven Build ---"
+        log_info "--- Benchmark 2: Maven Build ---" "bench"
         local maven_result=$(source "$CONFIG_SRC_DIR/maven_bench.sh" 2>&1)
         if echo "$maven_result" | grep -q "|"; then
             local name=$(echo "$maven_result" | tail -1 | cut -d'|' -f1)
@@ -222,11 +222,11 @@ run_benchmarks() {
             [ -n "$time" ] && [ "$time" != "0" ] && update_json "maven_build" "$time" "$cpu_avg" "$cpu_max" && update_csv "maven_build" "$time" "$cpu_avg" "$cpu_max" && print_results "Maven Build" "$time" "$cpu_avg" "$cpu_max"
         fi
     else
-        log_warn "Benchmark Maven saltato (--skip-maven)"
+        log_warn "Benchmark Maven saltato (--skip-maven)" "bench"
     fi
 
     if [ "$SKIP_NODE" != "true" ]; then
-        log_info "--- Benchmark 3: Node.js Build ---"
+        log_info "--- Benchmark 3: Node.js Build ---" "bench"
         local node_result=$(source "$CONFIG_SRC_DIR/node_bench.sh" 2>&1)
         if echo "$node_result" | grep -q "|"; then
             local name=$(echo "$node_result" | tail -1 | cut -d'|' -f1)
@@ -236,7 +236,7 @@ run_benchmarks() {
             [ -n "$time" ] && [ "$time" != "0" ] && update_json "node_build" "$time" "$cpu_avg" "$cpu_max" && update_csv "node_build" "$time" "$cpu_avg" "$cpu_max" && print_results "Node.js Build" "$time" "$cpu_avg" "$cpu_max"
         fi
     else
-        log_warn "Benchmark Node.js saltato (--skip-node)"
+        log_warn "Benchmark Node.js saltato (--skip-node)" "bench"
     fi
 }
 
@@ -257,9 +257,9 @@ main() {
 
     run_benchmarks
 
-    log_success "Benchmark completato!"
-    log_info "Risultati: $JSON_FILE"
-    log_info "Log: $LOG_FILE"
+    log_success "Benchmark completato!" "bench"
+    log_info "Risultati: $JSON_FILE" "bench"
+    log_info "Log: $LOG_FILE" "bench"
 }
 
 main "$@"
