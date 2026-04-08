@@ -81,7 +81,6 @@ EOF
             log_info "=== Output build $i ==="
             cat "$build_log" | head -30 | while read line; do log_info "  $line"; done
         fi
-        fi
     done
 
     if [ $iterations -gt 0 ]; then
