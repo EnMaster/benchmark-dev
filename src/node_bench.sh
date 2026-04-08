@@ -123,7 +123,7 @@ EOF
 
             local build_log="$workdir/build_$i.log"
             local result=$(measure_command "npm run build 2>&1 | tee '$build_log'" "$workdir")
-            local exit_code=$(echo "$result" | cut -d'|' -f5)
+            local exit_code=$(echo "$result" | tail -1 | cut -d'|' -f5)
             local cpu_avg=$(echo "$result" | cut -d'|' -f1)
             local cpu_max=$(echo "$result" | cut -d'|' -f2)
             local duration=$(echo "$result" | cut -d'|' -f4)
