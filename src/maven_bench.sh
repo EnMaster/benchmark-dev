@@ -20,9 +20,11 @@ run_maven_benchmark() {
     cd "$workdir"
 
     if [ ! -f "pom.xml" ]; then
-        log_info "Creo progetto Maven di test..."
-        mkdir -p "$workdir/src/main/java/com/example"
-        cat > "$workdir/pom.xml" << 'EOF'
+        log_info "Clono repository Maven..."
+        git clone --depth 1 "$repo_url" "$workdir" 2>/dev/null || {
+            log_info "Creo progetto Maven di test..."
+            mkdir -p "$workdir/src/main/java/com/example"
+            cat > "$workdir/pom.xml" << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -59,7 +61,7 @@ run_maven_benchmark() {
     </build>
 </project>
 EOF
-        cat > "$workdir/src/main/java/com/example/App.java" << 'JAVA'
+            cat > "$workdir/src/main/java/com/example/App.java" << 'JAVA'
 package com.example;
 public class App {
     public static void main(String[] args) {
@@ -68,6 +70,7 @@ public class App {
     }
 }
 JAVA
+        }
     fi
 
     local total_time=0
@@ -82,11 +85,12 @@ JAVA
         local build_log="$workdir/build_$i.log"
         local mvn_cmd="mvn clean package -T $threads -DskipTests $MAVEN_OPTS 2>&1 | tee '$build_log'"
         local result=$(measure_command "$mvn_cmd" "$workdir")
+        local exit_code=$(echo "$result" | cut -d'|' -f5)
         local cpu_avg=$(echo "$result" | cut -d'|' -f1)
         local cpu_max=$(echo "$result" | cut -d'|' -f2)
         local duration=$(echo "$result" | cut -d'|' -f4)
 
-        if [ -n "$duration" ] && [ "$duration" != "0" ]; then
+        if [ "$exit_code" = "0" ] && [ -n "$duration" ] && [ "$duration" != "0" ]; then
             log_info "=== Output build $i ==="
             tail -20 "$build_log" | while read line; do log_info "  $line"; done
             log_success "Iterazione $i completata: ${duration}s, CPU: ${cpu_avg}%"
@@ -94,7 +98,9 @@ JAVA
             total_cpu_avg=$(echo "$total_cpu_avg + $cpu_avg" | bc)
             total_cpu_max=$(echo "$total_cpu_max + $cpu_max" | bc)
         else
-            log_warn "Iterazione $i fallita"
+            log_warn "Iterazione $i fallita (exit code: $exit_code)"
+            log_info "=== Output build $i ==="
+            tail -20 "$build_log" | while read line; do log_info "  $line"; done
         fi
     done
 

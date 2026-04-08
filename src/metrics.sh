@@ -69,7 +69,7 @@ measure_command() {
     start_monitoring
 
     local start=$(date +%s.%N)
-    eval "cd '$workdir' && $cmd" &>/dev/null
+    eval "cd '$workdir' && $cmd" 
     local exit_code=$?
     local end=$(date +%s.%N)
 

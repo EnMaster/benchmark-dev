@@ -24,7 +24,14 @@ run_docker_benchmark() {
     cd "$workdir"
 
     if [ ! -f "Dockerfile" ]; then
-        log_info "Creo progetto Docker di test..."
+        log_info "Clono repository Docker..."
+        git clone --depth 1 "$repo_url" "$workdir" 2>/dev/null || {
+            log_info "Creo progetto Docker di test..."
+        }
+    fi
+
+    if [ ! -f "Dockerfile" ]; then
+        log_info "Creo Dockerfile di test..."
         cat > Dockerfile << 'EOF'
 FROM eclipse-temurin:17-jdk
 
@@ -57,11 +64,12 @@ EOF
 
         local build_log="$workdir/build_$i.log"
         local result=$(measure_command "docker build --no-cache -t benchmark/petclinic . 2>&1 | tee '$build_log'" "$workdir")
+        local exit_code=$(echo "$result" | cut -d'|' -f5)
         local cpu_avg=$(echo "$result" | cut -d'|' -f1)
         local cpu_max=$(echo "$result" | cut -d'|' -f2)
         local duration=$(echo "$result" | cut -d'|' -f4)
 
-        if [ -n "$duration" ] && [ "$duration" != "0" ]; then
+        if [ "$exit_code" = "0" ] && [ -n "$duration" ] && [ "$duration" != "0" ]; then
             log_info "=== Output build $i ==="
             cat "$build_log" | head -30 | while read line; do log_info "  $line"; done
             log_success "Iterazione $i completata: ${duration}s, CPU: ${cpu_avg}%"
@@ -69,7 +77,10 @@ EOF
             total_cpu_avg=$(echo "$total_cpu_avg + $cpu_avg" | bc)
             total_cpu_max=$(echo "$total_cpu_max + $cpu_max" | bc)
         else
-            log_warn "Iterazione $i fallita"
+            log_warn "Iterazione $i fallita (exit code: $exit_code)"
+            log_info "=== Output build $i ==="
+            cat "$build_log" | head -30 | while read line; do log_info "  $line"; done
+        fi
         fi
     done
 

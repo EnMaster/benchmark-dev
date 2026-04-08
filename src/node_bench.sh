@@ -19,9 +19,11 @@ run_node_benchmark() {
     cd "$workdir"
 
     if [ ! -f "package.json" ]; then
-        log_info "Creo progetto Node.js di test..."
-        mkdir -p "$workdir/src"
-        cat > "$workdir/package.json" << 'EOF'
+        log_info "Clono repository Node.js..."
+        git clone --depth 1 --filter=blob:none "$repo_url" "$workdir" 2>/dev/null || {
+            log_info "Creo progetto Node.js di test..."
+            mkdir -p "$workdir/src"
+            cat > "$workdir/package.json" << 'EOF'
 {
   "name": "benchmark-app",
   "version": "1.0.0",
@@ -92,6 +94,7 @@ const code = generateApp();
 fs.writeFileSync(path.join(componentsDir, 'App.js'), code);
 console.log('Generated 50 React components');
 EOF
+        }
     fi
 
     if [ -f "package.json" ] && [ ! -d "node_modules" ]; then
@@ -112,11 +115,12 @@ EOF
 
             local build_log="$workdir/build_$i.log"
             local result=$(measure_command "npm run build 2>&1 | tee '$build_log'" "$workdir")
+            local exit_code=$(echo "$result" | cut -d'|' -f5)
             local cpu_avg=$(echo "$result" | cut -d'|' -f1)
             local cpu_max=$(echo "$result" | cut -d'|' -f2)
             local duration=$(echo "$result" | cut -d'|' -f4)
 
-            if [ -n "$duration" ] && [ "$duration" != "0" ]; then
+            if [ "$exit_code" = "0" ] && [ -n "$duration" ] && [ "$duration" != "0" ]; then
                 log_info "=== Output build $i ==="
                 tail -20 "$build_log" | while read line; do log_info "  $line"; done
                 log_success "Iterazione $i completata: ${duration}s, CPU: ${cpu_avg}%"
@@ -124,7 +128,9 @@ EOF
                 total_cpu_avg=$(echo "$total_cpu_avg + $cpu_avg" | bc)
                 total_cpu_max=$(echo "$total_cpu_max + $cpu_max" | bc)
             else
-                log_warn "Iterazione $i fallita"
+                log_warn "Iterazione $i fallita (exit code: $exit_code)"
+                log_info "=== Output build $i ==="
+                tail -20 "$build_log" | while read line; do log_info "  $line"; done
             fi
         done
     fi
