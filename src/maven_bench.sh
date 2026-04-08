@@ -80,7 +80,7 @@ JAVA
     for i in $(seq 1 $iterations); do
         log_info "Iterazione $i/$iterations..." "$BENCHMARK_KEY"
 
-        drop_caches
+        rm -rf "$workdir/target" 2>/dev/null || true
 
         local build_log="$workdir/build_$i.log"
         export MAVEN_OPTS="-Xmx1024m"
