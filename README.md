@@ -1,135 +1,233 @@
-# CPU Benchmark v1.0 per Sviluppo Software
+# Node.js Build Benchmark System / Sistema di Benchmark Node.js
 
-> ⚠️ **AVVISO**: Questo progetto è stato scritto interamente in **vibecoding** come esperimento. 
-> Usalo a **proprio rischio e pericolo**. Non ci sono garanzie di funzionamento.
+---
 
-Strumento per misurare le performance CPU attraverso scenari reali di build.
+## English
 
-## Perché questi workload?
+### Overview
 
-### Docker Build
-- **Reale**: Building di un'applicazione Spring Boot reale
-- **Multi-stage**: Utilizza apt-get, maven, multi-thread
-- **Stress**: Scarica dipendenze, compila codice, crea layer
+A comprehensive benchmarking system for stress-testing CPU, RAM, and NVMe storage under realistic Node.js build conditions. Automatically generates a heavy Node.js project with TypeScript and Vite, then runs the build while collecting detailed system metrics.
 
-### Maven Build
-- **Reale**: Progetto Spring PetClinic (production-grade)
-- **Multi-core**: `-T 1C` usa tutti i core disponibili
-- **Dipendenze**: 50+ dipendenze Maven, download e compilazione
+### Features
 
-### Node.js Build
-- **Reale**: Build di React (npm install + build)
-- **I/O intensive**: Download npm packages
-- **CPU intensive**: Build/bundling
+- **Automatic Project Generation**: Creates a heavy Node.js project with hundreds of modules
+- **Multi-metric Monitoring**: Tracks CPU, RAM, and disk I/O during builds
+- **Configurable Intensity**: Three presets (low, medium, high)
+- **Structured Output**: JSON metrics and summary reports
+- **Reproducible**: Deterministic builds for consistent benchmarking
 
-## Installazione
-
-### Installazione globale (richiede root)
-```bash
-sudo ./benchmark.sh --install
-```
-
-### Installazione utente
-```bash
-./benchmark.sh --install-user
-```
-
-Dopo l'installazione:
-```bash
-benchmark           # Esegue i benchmark
-benchmark --help   # Mostra aiuto
-```
-
-## Utilizzo
+### Quick Start
 
 ```bash
-# Modalità full (default)
-./benchmark.sh
-
-# Modalità quick (1 iterazione)
-./benchmark.sh --mode quick
-
-# Thread manuali
-./benchmark.sh --threads 8
-
-# Solo output JSON
-./benchmark.sh --output json
-
-# Salta test specifici
-./benchmark.sh --skip-docker
-./benchmark.sh --skip-maven
-./benchmark.sh --skip-node
+cd /root/test
+./run-benchmark.sh medium 1
 ```
 
-## Dipendenze
+### Usage
 
-Lo strumento installa automaticamente le dipendenze mancanti:
-
-| Tool | Metodo installazione |
-|------|---------------------|
-| Docker | Ufficiale (download.docker.com) |
-| Maven | JDKMAN (sdkman.io) |
-| Node.js | NVM (nvm.sh) v20.x LTS |
-| Base (git, curl, bc, jq) | apt/yum |
-
-### Installazione manuale
 ```bash
-# Docker (ufficiale)
-curl -fsSL https://get.docker.com | sh
-
-# Maven (JDKMAN)
-curl -s "https://get.sdkman.io" | bash
-source ~/.sdkman/bin/sdkman-init.sh
-sdk install maven 3.9.9
-
-# Node.js (nodesource)
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-apt-get install -y nodejs
+./run-benchmark.sh [intensity] [num_runs]
 ```
 
-## Output
+#### Arguments
 
-### CLI
-```
-[Docker Build]
-  Tempo:     120.5s
-  CPU media: 88%
-  CPU max:   100%
+| Argument | Description | Default |
+|----------|-------------|---------|
+| `intensity` | Workload level (low/medium/high) | medium |
+| `num_runs` | Number of benchmark runs | 1 |
 
-[Maven Build]
-  Tempo:     95.2s
-  CPU media: 92%
-```
+#### Intensity Settings
 
-### JSON (`results/results.json`)
+| Level | Modules | Files/Module | Expected Duration |
+|-------|---------|--------------|-------------------|
+| low | 100 | 3 | ~15s |
+| medium | 500 | 10 | ~60s |
+| high | 1000 | 20 | ~180s |
+
+### Output Files
+
+After running, results are saved to `output/`:
+
+| File | Description |
+|------|-------------|
+| `summary.json` | Final benchmark results |
+| `metrics.jsonl` | Raw time-series metrics |
+| `benchmark.log` | Build output log |
+| `system-info.txt` | System information |
+
+### Sample Output (summary.json)
+
 ```json
 {
-  "timestamp": "2024-01-15T10:30:00Z",
-  "system": {
-    "cores": 8,
-    "threads": 8,
-    "memory": "16GB",
-    "os": "Ubuntu 22.04"
+  "benchmark": {
+    "timestamp": "2026-04-09T21:11:30+00:00",
+    "intensity": "medium",
+    "num_modules": 500,
+    "num_files_per_module": 10
   },
-  "benchmarks": {
-    "docker_build": {
-      "time": 120.5,
-      "cpu_avg": 88,
-      "cpu_max": 100
-    },
-    "maven_build": {
-      "time": 95.2,
-      "cpu_avg": 92,
-      "cpu_max": 100
-    }
+  "timing": {
+    "project_generation_seconds": 22,
+    "dependency_install_seconds": 9,
+    "build_seconds": 25,
+    "total_seconds": 56
+  },
+  "metrics": {
+    "peak_cpu_percent": 66,
+    "avg_cpu_percent": 44,
+    "peak_memory_mb": 2671
+  },
+  "system": {
+    "cpu_model": "Intel(R) N100",
+    "total_memory_mb": 15769
   }
 }
 ```
 
-## Note
+### Architecture
 
-- Richiede Linux (testato su Ubuntu/Debian)
-- Alcuni test vengono saltati se le dipendenze mancano
-- `drop_caches` richiede root
-- Spazio richiesto: ~2-5GB
-- Supporta skip di singoli test con `--skip-docker`, `--skip-maven`, `--skip-node`
+#### Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `run-benchmark.sh` | Main orchestrator |
+| `scripts/01-system-info.sh` | Collect system info |
+| `scripts/02-generate-project.sh` | Generate heavy project |
+| `scripts/03-monitor.sh` | Alternative monitoring (per-process) |
+| `scripts/04-continuous-monitor.sh` | Alternative monitoring (system-wide) |
+
+Note: `run-benchmark.sh` uses inline monitoring by default. Scripts 03 and 04 are alternative implementations.
+
+#### Stress Characteristics
+
+- **CPU**: TypeScript compilation + Vite bundling with parallel workers
+- **RAM**: Large dependency tree, in-memory transformations
+- **NVMe**: Thousands of source files, incremental build artifacts
+
+### Requirements
+
+- Ubuntu (or similar Linux)
+- Node.js 18+
+- npm 9+
+- bash 4+
+
+### Notes
+
+- First run installs dependencies (~9s)
+- Build times vary by system hardware
+- Peak memory includes Node.js process + system cache
+
+---
+
+## Italiano
+
+### Panoramica
+
+Un sistema di benchmark completo per stress-test di CPU, RAM e storage NVMe in condizioni realistiche di build Node.js. Genera automaticamente un progetto Node.js pesante con TypeScript e Vite, poi esegue il build mentre raccoglie metriche dettagliate del sistema.
+
+### Caratteristiche
+
+- **Generazione Automatica del Progetto**: Crea un progetto Node.js pesante con centinaia di moduli
+- **Monitoraggio Multi-metrica**: Traccia CPU, RAM e I/O disco durante i build
+- **Intensità Configurabile**: Tre preset (low, medium, high)
+- **Output Strutturato**: Metriche JSON e report di riepilogo
+- **Riproducibile**: Build deterministici per benchmark consistenti
+
+### Avvio Rapido
+
+```bash
+cd /root/test
+./run-benchmark.sh medium 1
+```
+
+### Utilizzo
+
+```bash
+./run-benchmark.sh [intensità] [num_runs]
+```
+
+#### Argomenti
+
+| Argomento | Descrizione | Default |
+|----------|-------------|---------|
+| `intensità` | Livello di carico (low/medium/high) | medium |
+| `num_runs` | Numero di esecuzioni del benchmark | 1 |
+
+#### Impostazioni di Intensità
+
+| Livello | Moduli | File/Modulo | Durata Prevista |
+|---------|--------|-------------|-----------------|
+| low | 100 | 3 | ~15s |
+| medium | 500 | 10 | ~60s |
+| high | 1000 | 20 | ~180s |
+
+### File di Output
+
+Dopo l'esecuzione, i risultati vengono salvati in `output/`:
+
+| File | Descrizione |
+|------|-------------|
+| `summary.json` | Risultati finali del benchmark |
+| `metrics.jsonl` | Metriche grezze in serie temporale |
+| `benchmark.log` | Log dell'output del build |
+| `system-info.txt` | Informazioni di sistema |
+
+### Esempio di Output (summary.json)
+
+```json
+{
+  "benchmark": {
+    "timestamp": "2026-04-09T21:11:30+00:00",
+    "intensity": "medium",
+    "num_modules": 500,
+    "num_files_per_module": 10
+  },
+  "timing": {
+    "project_generation_seconds": 22,
+    "dependency_install_seconds": 9,
+    "build_seconds": 25,
+    "total_seconds": 56
+  },
+  "metrics": {
+    "peak_cpu_percent": 66,
+    "avg_cpu_percent": 44,
+    "peak_memory_mb": 2671
+  },
+  "system": {
+    "cpu_model": "Intel(R) N100",
+    "total_memory_mb": 15769
+  }
+}
+```
+
+### Architettura
+
+#### Script
+
+| Script | Funzione |
+|--------|----------|
+| `run-benchmark.sh` | Orchestratore principale |
+| `scripts/01-system-info.sh` | Raccoglie info sistema |
+| `scripts/02-generate-project.sh` | Genera progetto pesante |
+| `scripts/03-monitor.sh` | Monitoraggio alternativo (per-processo) |
+| `scripts/04-continuous-monitor.sh` | Monitoraggio alternativo (sistema) |
+
+Nota: `run-benchmark.sh` utilizza monitoraggio inline di default. Gli script 03 e 04 sono implementazioni alternative.
+
+#### Caratteristiche di Stress
+
+- **CPU**: Compilazione TypeScript + bundling Vite con worker paralleli
+- **RAM**: Albero delle dipendenze grande, trasformazioni in memoria
+- **NVMe**: Migliaia di file sorgente, artifact di build incrementali
+
+### Requisiti
+
+- Ubuntu (o Linux simile)
+- Node.js 18+
+- npm 9+
+- bash 4+
+
+### Note
+
+- La prima esecuzione installa le dipendenze (~9s)
+- I tempi di build variano in base all'hardware del sistema
+- Il picco di memoria include il processo Node.js + cache di sistema
